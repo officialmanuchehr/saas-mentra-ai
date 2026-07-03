@@ -37,3 +37,6 @@ next-env.d.ts
 
 # Claude Code local state
 .claude/
+
+# Supabase CLI local cache
+supabase/.temp/
