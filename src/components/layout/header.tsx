@@ -27,7 +27,7 @@ export async function Header() {
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center">
             <Image
-              src="/symbol.png"
+              src="/symbol-removebg-preview.png"
               alt="Mentra AI"
               width={160}
               height={100}
