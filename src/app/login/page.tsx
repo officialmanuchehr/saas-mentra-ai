@@ -38,7 +38,7 @@ function LoginForm() {
     event.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       toast.error(getAuthErrorMessage(error.message));
@@ -46,7 +46,17 @@ function LoginForm() {
       return;
     }
 
-    router.push(next);
+    let destination = next;
+    if (next === "/" && data.user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("onboarded_at")
+        .eq("id", data.user.id)
+        .single();
+      if (!profile?.onboarded_at) destination = "/onboarding";
+    }
+
+    router.push(destination);
     router.refresh();
   }
 

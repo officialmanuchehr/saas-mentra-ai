@@ -514,6 +514,7 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          onboarded_at: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -521,6 +522,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id: string
+          onboarded_at?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -528,6 +530,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          onboarded_at?: string | null
         }
         Relationships: []
       }

@@ -10,9 +10,18 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      let destination = next;
+      if (next === "/" && data.user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("onboarded_at")
+          .eq("id", data.user.id)
+          .single();
+        if (!profile?.onboarded_at) destination = "/onboarding";
+      }
+      return NextResponse.redirect(`${origin}${destination}`);
     }
   }
 

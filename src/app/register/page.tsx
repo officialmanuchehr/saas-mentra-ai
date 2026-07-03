@@ -69,7 +69,9 @@ function RegisterForm() {
       return;
     }
 
-    router.push(next);
+    // Свежий профиль — onboarded_at гарантированно ещё не заполнен, поэтому
+    // не нужен отдельный запрос: если next не задан явно, ведём на онбординг.
+    router.push(next === "/" ? "/onboarding" : next);
     router.refresh();
   }
 

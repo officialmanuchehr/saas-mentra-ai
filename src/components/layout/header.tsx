@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { UserMenu } from "@/components/layout/user-menu";
@@ -40,12 +41,19 @@ export async function Header() {
         </div>
 
         {user ? (
-          <UserMenu
-            userId={user.id}
-            email={user.email ?? ""}
-            fullName={profile?.full_name ?? null}
-            avatarUrl={profile?.avatar_url ?? null}
-          />
+          <div className="flex items-center gap-3">
+            <Button asChild variant="outline" className="rounded-full gap-1.5">
+              <Link href="/create">
+                <Plus className="size-4" /> Создать сообщество
+              </Link>
+            </Button>
+            <UserMenu
+              userId={user.id}
+              email={user.email ?? ""}
+              fullName={profile?.full_name ?? null}
+              avatarUrl={profile?.avatar_url ?? null}
+            />
+          </div>
         ) : (
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost">
