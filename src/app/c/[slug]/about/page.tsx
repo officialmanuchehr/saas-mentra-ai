@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { CommunityCover } from "@/components/communities/community-cover";
 import { CommunityTabs } from "@/components/communities/community-tabs";
 import { JoinButton } from "@/components/communities/join-button";
+import { LeaveCommunityButton } from "@/components/communities/leave-community-button";
 import { Badge } from "@/components/ui/badge";
 
 export default async function CommunityAboutPage({
@@ -26,14 +27,16 @@ export default async function CommunityAboutPage({
   } = await supabase.auth.getUser();
 
   let isMember = false;
+  let isOwner = false;
   if (user) {
     const { data: membership } = await supabase
       .from("memberships")
-      .select("id")
+      .select("id, role")
       .eq("community_id", community.id)
       .eq("user_id", user.id)
       .maybeSingle();
     isMember = Boolean(membership);
+    isOwner = membership?.role === "owner";
   }
 
   const isFree = community.price_monthly === null;
@@ -65,7 +68,10 @@ export default async function CommunityAboutPage({
           <p className="text-sm text-muted-foreground">{community.member_count} участников</p>
 
           {isMember ? (
-            <Badge variant="light">Вы участник этого сообщества</Badge>
+            <div className="flex flex-wrap items-center gap-3">
+              <Badge variant="light">Вы участник этого сообщества</Badge>
+              {!isOwner && <LeaveCommunityButton communityId={community.id} />}
+            </div>
           ) : (
             <JoinButton
               slug={community.slug}

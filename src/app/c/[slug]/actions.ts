@@ -36,6 +36,29 @@ export async function completeCheckout(
   }
 }
 
+export async function leaveCommunity(communityId: string) {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Требуется вход");
+
+  const { data: membership } = await supabase
+    .from("memberships")
+    .select("id, role")
+    .eq("community_id", communityId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!membership) throw new Error("Вы не состоите в этом сообществе");
+  if (membership.role === "owner") {
+    throw new Error("Передайте владение или удалите сообщество");
+  }
+
+  const { error } = await supabase.from("memberships").delete().eq("id", membership.id);
+  if (error) throw new Error(error.message);
+}
+
 async function getMembershipId(
   supabase: ReturnType<typeof createClient>,
   communityId: string,
