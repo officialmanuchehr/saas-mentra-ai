@@ -4,6 +4,8 @@ import { Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { UserMenu } from "@/components/layout/user-menu";
+import { NotificationsMenu } from "@/components/layout/notifications-menu";
+import { fetchNotifications, fetchUnreadNotificationsCount } from "@/lib/notifications";
 
 export async function Header() {
   const supabase = createClient();
@@ -12,13 +14,17 @@ export async function Header() {
   } = await supabase.auth.getUser();
 
   let profile: { full_name: string | null; avatar_url: string | null } | null = null;
+  let notifications: Awaited<ReturnType<typeof fetchNotifications>> = [];
+  let unreadCount = 0;
   if (user) {
-    const { data } = await supabase
-      .from("profiles")
-      .select("full_name, avatar_url")
-      .eq("id", user.id)
-      .single();
+    const [{ data }, notificationsList, unread] = await Promise.all([
+      supabase.from("profiles").select("full_name, avatar_url").eq("id", user.id).single(),
+      fetchNotifications(supabase, user.id, 10),
+      fetchUnreadNotificationsCount(supabase, user.id),
+    ]);
     profile = data;
+    notifications = notificationsList;
+    unreadCount = unread;
   }
 
   return (
@@ -47,6 +53,11 @@ export async function Header() {
                 <Plus className="size-4" /> Создать сообщество
               </Link>
             </Button>
+            <NotificationsMenu
+              userId={user.id}
+              initialNotifications={notifications}
+              initialUnreadCount={unreadCount}
+            />
             <UserMenu
               userId={user.id}
               email={user.email ?? ""}

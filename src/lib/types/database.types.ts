@@ -353,6 +353,78 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          actor_id: string
+          comment_id: string | null
+          community_id: string
+          created_at: string
+          id: string
+          is_read: boolean
+          post_id: string | null
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Insert: {
+          actor_id: string
+          comment_id?: string | null
+          community_id: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          post_id?: string | null
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Update: {
+          actor_id?: string
+          comment_id?: string | null
+          community_id?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          post_id?: string | null
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       points_events: {
         Row: {
           created_at: string
@@ -602,6 +674,11 @@ export type Database = {
     Enums: {
       like_target_type: "post" | "comment"
       membership_role: "owner" | "admin" | "member"
+      notification_type:
+        | "comment_on_post"
+        | "reply_to_comment"
+        | "like_post"
+        | "like_comment"
       points_event_type:
         | "post_created"
         | "comment_created"
@@ -741,6 +818,12 @@ export const Constants = {
     Enums: {
       like_target_type: ["post", "comment"],
       membership_role: ["owner", "admin", "member"],
+      notification_type: [
+        "comment_on_post",
+        "reply_to_comment",
+        "like_post",
+        "like_comment",
+      ],
       points_event_type: [
         "post_created",
         "comment_created",
