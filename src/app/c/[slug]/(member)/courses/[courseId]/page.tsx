@@ -26,18 +26,28 @@ export default async function CourseDetailPage({
     notFound();
   }
 
-  const { data: course } = await supabase
-    .from("courses")
-    .select(
-      "id, title, modules(id, course_id, title, sort_order, lessons(id, module_id, title, video_url, content, duration_min, sort_order))"
-    )
-    .eq("id", params.courseId)
-    .eq("community_id", community.id)
-    .single();
+  const [{ data: course }, { data: membership }] = await Promise.all([
+    supabase
+      .from("courses")
+      .select(
+        "id, title, modules(id, course_id, title, sort_order, lessons(id, module_id, title, video_url, content, duration_min, sort_order))"
+      )
+      .eq("id", params.courseId)
+      .eq("community_id", community.id)
+      .single(),
+    supabase
+      .from("memberships")
+      .select("role")
+      .eq("community_id", community.id)
+      .eq("user_id", user.id)
+      .maybeSingle(),
+  ]);
 
   if (!course) {
     notFound();
   }
+
+  const isAdmin = membership?.role === "owner" || membership?.role === "admin";
 
   const modules = (course.modules as CourseModule[])
     .map((m) => ({ ...m, lessons: [...m.lessons].sort((a, b) => a.sort_order - b.sort_order) }))
@@ -57,9 +67,11 @@ export default async function CourseDetailPage({
   return (
     <CourseViewer
       communityId={community.id}
+      courseId={course.id}
       courseTitle={course.title}
       modules={modules}
       initialCompletedLessonIds={(progress ?? []).map((p) => p.lesson_id)}
+      isAdmin={isAdmin}
     />
   );
 }

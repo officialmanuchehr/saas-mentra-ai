@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { toEmbedUrl } from "@/lib/video-embed";
 
 async function requireOwner(communityId: string) {
   const supabase = createClient();
@@ -155,4 +156,114 @@ export async function setCommunityCoverGradient(communityId: string, gradientKey
   if (error) throw new Error(error.message);
 
   revalidatePath(`/c/[slug]`, "layout");
+}
+
+function parseVideoUrl(videoUrl: string | null | undefined): string | null {
+  if (!videoUrl || !videoUrl.trim()) return null;
+  const trimmed = videoUrl.trim();
+  if (!toEmbedUrl(trimmed)) {
+    throw new Error("Не удалось распознать ссылку. Поддерживаются YouTube и Vimeo.");
+  }
+  // Хранится исходная ссылка как есть — toEmbedUrl вызывается только для
+  // валидации на сохранении, в embed она превращается уже в плеере.
+  return trimmed;
+}
+
+export async function createModule(courseId: string, communityId: string, title: string) {
+  const { supabase } = await requireAdmin(communityId);
+  if (!title.trim()) throw new Error("Введите название модуля");
+
+  const { count } = await supabase
+    .from("modules")
+    .select("*", { count: "exact", head: true })
+    .eq("course_id", courseId);
+
+  const { data, error } = await supabase
+    .from("modules")
+    .insert({ course_id: courseId, title: title.trim(), sort_order: count ?? 0 })
+    .select("id, course_id, title, sort_order")
+    .single();
+  if (error || !data) throw new Error(error?.message ?? "Не удалось создать модуль");
+
+  revalidatePath(`/c/[slug]/courses/[courseId]`, "page");
+  return { module: { ...data, lessons: [] } };
+}
+
+export async function updateModule(moduleId: string, communityId: string, title: string) {
+  const { supabase } = await requireAdmin(communityId);
+  if (!title.trim()) throw new Error("Введите название модуля");
+
+  const { error } = await supabase.from("modules").update({ title: title.trim() }).eq("id", moduleId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/c/[slug]/courses/[courseId]`, "page");
+}
+
+export async function deleteModule(moduleId: string, communityId: string) {
+  const { supabase } = await requireAdmin(communityId);
+
+  const { error } = await supabase.from("modules").delete().eq("id", moduleId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/c/[slug]/courses/[courseId]`, "page");
+}
+
+interface LessonInput {
+  title: string;
+  content: string | null;
+  videoUrl: string | null;
+}
+
+export async function createLesson(moduleId: string, communityId: string, input: LessonInput) {
+  const { supabase } = await requireAdmin(communityId);
+  if (!input.title.trim()) throw new Error("Введите название урока");
+  const videoUrl = parseVideoUrl(input.videoUrl);
+
+  const { count } = await supabase
+    .from("lessons")
+    .select("*", { count: "exact", head: true })
+    .eq("module_id", moduleId);
+
+  const { data, error } = await supabase
+    .from("lessons")
+    .insert({
+      module_id: moduleId,
+      title: input.title.trim(),
+      content: input.content?.trim() || null,
+      video_url: videoUrl,
+      sort_order: count ?? 0,
+    })
+    .select("id, module_id, title, video_url, content, duration_min, sort_order")
+    .single();
+  if (error || !data) throw new Error(error?.message ?? "Не удалось создать урок");
+
+  revalidatePath(`/c/[slug]/courses/[courseId]`, "page");
+  return { lesson: data };
+}
+
+export async function updateLesson(lessonId: string, communityId: string, input: LessonInput) {
+  const { supabase } = await requireAdmin(communityId);
+  if (!input.title.trim()) throw new Error("Введите название урока");
+  const videoUrl = parseVideoUrl(input.videoUrl);
+
+  const { error } = await supabase
+    .from("lessons")
+    .update({
+      title: input.title.trim(),
+      content: input.content?.trim() || null,
+      video_url: videoUrl,
+    })
+    .eq("id", lessonId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/c/[slug]/courses/[courseId]`, "page");
+}
+
+export async function deleteLesson(lessonId: string, communityId: string) {
+  const { supabase } = await requireAdmin(communityId);
+
+  const { error } = await supabase.from("lessons").delete().eq("id", lessonId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/c/[slug]/courses/[courseId]`, "page");
 }
